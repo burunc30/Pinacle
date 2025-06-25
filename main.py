@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 import time
 
 def run_scraper():
-    url = "https://www.pinnacle.com/en/sports"  # əsas səhifə
+    url = "https://www.pinnacle.com/en/odds/matchups"
     print("🔗 Sayta daxil olunur...")
 
     with sync_playwright() as p:
@@ -12,21 +12,21 @@ def run_scraper():
         page = context.new_page()
         page.goto(url)
 
-        # Yüklənməsi üçün vaxt ver
-        time.sleep(5)  # 5 saniyə gözlə (lazım olsa 7-10 da olar)
+        time.sleep(7)  # saytin JS ilə yüklənməsi üçün
 
         html = page.content()
         print("✅ HTML alındı.")
         print("ℹ️ Səhifə Başlığı:", page.title())
 
         soup = BeautifulSoup(html, 'html.parser')
-        links = soup.find_all('a')
-        print(f"🔍 Tapılan link sayı: {len(links)}")
 
-        for i, a in enumerate(links[:10]):
-            text = a.get_text(strip=True)
-            href = a.get('href')
-            print(f"{i+1}. {text} -> {href}")
+        # Sadəcə yoxlama üçün ilk 10 <div> və ya <span> tipli blokları göstər
+        divs = soup.find_all("div")
+        print(f"🔢 Tapılan DIV sayı: {len(divs)}")
+
+        for i, div in enumerate(divs[:10]):
+            text = div.get_text(strip=True)
+            print(f"{i+1}. {text}")
 
         browser.close()
 
