@@ -1,38 +1,31 @@
 import time
 from playwright.sync_api import sync_playwright
 
-def scrape_pinnacle():
+def scrape_pinnacle_highlights():
     print("🔗 Sayta daxil olunur...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
-
-        # Yeni səhifə aç
         page = context.new_page()
 
-        # Pinnacle saytında yalnız futbol üçün odds səhifəsi
-        url = "https://www.pinnacle.com/en/odds/soccer"
+        url = "https://www.pinnacle.com/en/soccer/matchups/highlights/"
         page.goto(url)
 
-        time.sleep(10)  # Saytın JS ilə tam yüklənməsi üçün
+        time.sleep(10)  # Sayt JS ilə yüklənsin deyə gözləyirik
 
         print("✅ HTML alındı.")
+        print(f"ℹ️ Səhifə Başlığı: {page.title()}")
 
-        # Səhifə başlığını çıxar
-        title = page.title()
-        print(f"ℹ️ Səhifə Başlığı: {title}")
+        # Ən çox matç məlumatı olan elementləri tapmağa çalışırıq
+        match_blocks = page.query_selector_all("div.style_row__")
+        print(f"🔢 Tapılan matç bloklarının sayı: {len(match_blocks)}")
 
-        # Bütün div-ləri tap
-        divs = page.query_selector_all("div")
-        print(f"🔢 Tapılan DIV sayı: {len(divs)}")
-
-        # İlk 10 div-in textlərini göstər
-        for i, div in enumerate(divs[:10]):
-            text = div.inner_text().strip()
+        for i, match in enumerate(match_blocks[:10]):
+            text = match.inner_text().strip()
             print(f"{i+1}. {text}")
 
         browser.close()
 
 if __name__ == "__main__":
-    scrape_pinnacle()
+    scrape_pinnacle_highlights()
