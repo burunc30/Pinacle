@@ -1,28 +1,33 @@
-import asyncio
-from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
+from playwright.sync_api import sync_playwright
 from bs4 import BeautifulSoup
 
-URL = "https://www.pinnacle.com/en/odds/match/football"
-
-async def main():
+def run_scraper():
+    url = "https://www.pinnacle.com/en/sports"  # əsas səhifə, sonra dəqiqləşdirəcəyik
     print("🔗 Sayta daxil olunur...")
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
-
-        await stealth_async(page)
-        await page.goto(URL, timeout=60000)
-        html = await page.content()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+        page = context.new_page()
+        page.goto(url)
+        html = page.content()
         print("✅ HTML alındı.")
 
-        soup = BeautifulSoup(html, "html.parser")
-        title = soup.title.string if soup.title else "Başlıq yoxdur"
-        print(f"🌐 Səhifə Başlığı: {title}")
+        # Saytın başlığını yoxla
+        print("ℹ️ Səhifə Başlığı:", page.title())
 
-        await browser.close()
+        # BeautifulSoup ilə test
+        soup = BeautifulSoup(html, 'html.parser')
+        links = soup.find_all('a')
+        print(f"🔍 Tapılan link sayı: {len(links)}")
+
+        # İlk 10 linki göstər
+        for i, a in enumerate(links[:10]):
+            text = a.get_text(strip=True)
+            href = a.get('href')
+            print(f"{i+1}. {text} -> {href}")
+
+        browser.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_scraper()
