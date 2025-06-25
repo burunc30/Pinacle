@@ -1,34 +1,38 @@
-from playwright.sync_api import sync_playwright
-from bs4 import BeautifulSoup
 import time
+from playwright.sync_api import sync_playwright
 
-def run_scraper():
-    url = "https://www.pinnacle.com/en/odds/matchups"
+def scrape_pinnacle():
     print("🔗 Sayta daxil olunur...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
+
+        # Yeni səhifə aç
         page = context.new_page()
+
+        # Pinnacle saytında yalnız futbol üçün odds səhifəsi
+        url = "https://www.pinnacle.com/en/odds/soccer"
         page.goto(url)
 
-        time.sleep(7)  # saytin JS ilə yüklənməsi üçün
+        time.sleep(10)  # Saytın JS ilə tam yüklənməsi üçün
 
-        html = page.content()
         print("✅ HTML alındı.")
-        print("ℹ️ Səhifə Başlığı:", page.title())
 
-        soup = BeautifulSoup(html, 'html.parser')
+        # Səhifə başlığını çıxar
+        title = page.title()
+        print(f"ℹ️ Səhifə Başlığı: {title}")
 
-        # Sadəcə yoxlama üçün ilk 10 <div> və ya <span> tipli blokları göstər
-        divs = soup.find_all("div")
+        # Bütün div-ləri tap
+        divs = page.query_selector_all("div")
         print(f"🔢 Tapılan DIV sayı: {len(divs)}")
 
+        # İlk 10 div-in textlərini göstər
         for i, div in enumerate(divs[:10]):
-            text = div.get_text(strip=True)
+            text = div.inner_text().strip()
             print(f"{i+1}. {text}")
 
         browser.close()
 
 if __name__ == "__main__":
-    run_scraper()
+    scrape_pinnacle()
