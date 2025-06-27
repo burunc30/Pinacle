@@ -1,30 +1,43 @@
 import requests
+from bs4 import BeautifulSoup
 
-def fetch_pinnacle_matchups():
-    print("🔗 JSON API-yə sorğu göndərilir...")
+# Saytların siyahısı
+urls = {
+    "pinnacle": "https://www.pinnacle.com/en/soccer/matchups/highlights/",
+    "betfair": "https://www.betfair.com/sport/football",
+    "williamhill": "https://sports.williamhill.com/betting/en-gb/football",
+    "1xbet": "https://1xbet.com/en/line/Football/",
+    "10bet": "https://www.10bet.com/sports/soccer/",
+}
 
-    url = "https://www.pinnacle.com/en/api/matchups?sportId=29"
+# Aktiv sayt adı (buranı dəyişməklə başqa sayt yoxlaya bilərsən)
+active = "betfair"  # məsələn: "pinnacle", "1xbet", "williamhill"
+
+# URL seç
+url = urls.get(active)
+print(f"🔗 Sayta daxil olunur: {url}")
+
+try:
     headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
     }
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    print("✅ HTML alındı.")
 
-    response = requests.get(url, headers=headers)
+    # HTML analiz
+    soup = BeautifulSoup(response.text, "html.parser")
 
-    if response.status_code == 200:
-        data = response.json()
-        print("✅ Məlumat alındı.")
+    print(f"ℹ️ Səhifə Başlığı: {soup.title.string if soup.title else 'Tapılmadı'}")
 
-        matches = data.get("highlights", [])
-        print(f"🔢 Tapılan oyun sayı: {len(matches)}")
+    # Sadə blokların sayı (məsələn div, section və s.)
+    divs = soup.find_all("div")
+    print(f"🔢 Tapılan DIV sayı: {len(divs)}")
 
-        for i, match in enumerate(matches[:10]):
-            teams = match.get("participants", [])
-            start_time = match.get("startTime")
-            league = match.get("league", {}).get("name", "")
-            print(f"{i+1}. {league} | {teams} | Start: {start_time}")
-    else:
-        print(f"❌ Sorğu uğursuz oldu. Status kod: {response.status_code}")
+    # Test məqsədilə ilk 5 div içindəkini göstər
+    for i, div in enumerate(divs[:5]):
+        text = div.get_text(strip=True)
+        print(f"{i+1}. {text[:300]}...")  # 300 simvoldan çox göstərməsin
 
-if __name__ == "__main__":
-    fetch_pinnacle_matchups()
+except Exception as e:
+    print(f"❌ Xəta baş verdi: {e}")
