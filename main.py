@@ -1,31 +1,30 @@
-import time
-from playwright.sync_api import sync_playwright
+import requests
 
-def scrape_pinnacle_highlights():
-    print("🔗 Sayta daxil olunur...")
+def fetch_pinnacle_matchups():
+    print("🔗 JSON API-yə sorğu göndərilir...")
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
+    url = "https://www.pinnacle.com/en/api/matchups?sportId=29"
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json"
+    }
 
-        url = "https://www.pinnacle.com/en/soccer/matchups/highlights/"
-        page.goto(url)
+    response = requests.get(url, headers=headers)
 
-        time.sleep(10)  # Sayt JS ilə yüklənsin deyə gözləyirik
+    if response.status_code == 200:
+        data = response.json()
+        print("✅ Məlumat alındı.")
 
-        print("✅ HTML alındı.")
-        print(f"ℹ️ Səhifə Başlığı: {page.title()}")
+        matches = data.get("highlights", [])
+        print(f"🔢 Tapılan oyun sayı: {len(matches)}")
 
-        # Ən çox matç məlumatı olan elementləri tapmağa çalışırıq
-        match_blocks = page.query_selector_all("div.style_row__")
-        print(f"🔢 Tapılan matç bloklarının sayı: {len(match_blocks)}")
-
-        for i, match in enumerate(match_blocks[:10]):
-            text = match.inner_text().strip()
-            print(f"{i+1}. {text}")
-
-        browser.close()
+        for i, match in enumerate(matches[:10]):
+            teams = match.get("participants", [])
+            start_time = match.get("startTime")
+            league = match.get("league", {}).get("name", "")
+            print(f"{i+1}. {league} | {teams} | Start: {start_time}")
+    else:
+        print(f"❌ Sorğu uğursuz oldu. Status kod: {response.status_code}")
 
 if __name__ == "__main__":
-    scrape_pinnacle_highlights()
+    fetch_pinnacle_matchups()
