@@ -1,43 +1,26 @@
-import requests
-from bs4 import BeautifulSoup
+import asyncio
+from playwright.async_api import async_playwright
 
-# Saytların siyahısı
-urls = {
-    "pinnacle": "https://www.pinnacle.com/en/soccer/matchups/highlights/",
-    "betfair": "https://www.betfair.com/sport/football",
-    "williamhill": "https://sports.williamhill.com/betting/en-gb/football",
-    "1xbet": "https://1xbet.com/en/line/Football/",
-    "10bet": "https://www.10bet.com/sports/soccer/",
-}
+async def run():
+    print("🔗 Sayta daxil olunur: https://www.10bet.com/sports")
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context()
+            page = await context.new_page()
+            await page.goto("https://www.10bet.com/sports", timeout=60000)
+            await page.wait_for_timeout(5000)
 
-# Aktiv sayt adı (buranı dəyişməklə başqa sayt yoxlaya bilərsən)
-active = "betfair"  # məsələn: "pinnacle", "1xbet", "williamhill"
+            html = await page.content()
+            print("✅ HTML alındı.")
+            print(f"ℹ️ Səhifə Başlığı: {await page.title()}")
 
-# URL seç
-url = urls.get(active)
-print(f"🔗 Sayta daxil olunur: {url}")
+            # Burda test üçün neçə "div" var, onu sayırıq
+            divs = await page.query_selector_all("div")
+            print(f"🔢 Tapılan DIV sayı: {len(divs)}")
 
-try:
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    }
-    response = requests.get(url, headers=headers, timeout=15)
-    response.raise_for_status()
-    print("✅ HTML alındı.")
+            await browser.close()
+    except Exception as e:
+        print(f"❌ Xəta baş verdi: {e}")
 
-    # HTML analiz
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    print(f"ℹ️ Səhifə Başlığı: {soup.title.string if soup.title else 'Tapılmadı'}")
-
-    # Sadə blokların sayı (məsələn div, section və s.)
-    divs = soup.find_all("div")
-    print(f"🔢 Tapılan DIV sayı: {len(divs)}")
-
-    # Test məqsədilə ilk 5 div içindəkini göstər
-    for i, div in enumerate(divs[:5]):
-        text = div.get_text(strip=True)
-        print(f"{i+1}. {text[:300]}...")  # 300 simvoldan çox göstərməsin
-
-except Exception as e:
-    print(f"❌ Xəta baş verdi: {e}")
+asyncio.run(run())
