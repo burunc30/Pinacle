@@ -1,31 +1,28 @@
-import requests
-from bs4 import BeautifulSoup
+import asyncio
+from playwright.sync_api import sync_playwright
 import re
 
-url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
-print(f"🔗 Sayta daxil olunur: {url}")
+def run():
+    url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
+    print(f"🔗 Sayta daxil olunur: {url}")
 
-try:
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
-    }
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    print("✅ HTML alındı.")
-except Exception as e:
-    print(f"❌ Xəta baş verdi: {e}")
-    exit()
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(url, timeout=60000)
+        page.wait_for_timeout(5000)  # 5 saniyə gözləyir ki, bütün JS yüklənsin
 
-soup = BeautifulSoup(response.text, "html.parser")
-title = soup.title.string.strip() if soup.title else "Başlıq tapılmadı"
-print(f"ℹ️ Səhifə Başlığı: {title}")
+        content = page.content()
+        title = page.title()
+        print(f"✅ HTML alındı.")
+        print(f"ℹ️ Səhifə Başlığı: {title}")
 
-texts = soup.stripped_strings
-text_list = list(texts)
-print(f"🔢 Tapılan yazı sayı: {len(text_list)}")
+        odds = re.findall(r"\d+\.\d{1,2}", content)
+        print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
+        for odd in odds[:15]:
+            print(f"• {odd}")
 
-# Əmsal tapmaq üçün regex
-odds = re.findall(r"\d+\.\d{1,2}", response.text)
-print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
-for odd in odds[:10]:  # Yalnız ilk 10 əmsalı göstər
-    print(f"• {odd}")
+        browser.close()
+
+if __name__ == "__main__":
+    run()
