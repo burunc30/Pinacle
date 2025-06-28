@@ -1,50 +1,31 @@
-import asyncio
-from playwright.async_api import async_playwright
+import requests
+from bs4 import BeautifulSoup
 import re
 
-async def run():
-    url = "https://www.188bet.com/en/sports/soccer/highlights"
-    print(f"🔗 Sayta daxil olunur: {url}")
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context()
-            page = await context.new_page()
+url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
+print(f"🔗 Sayta daxil olunur: {url}")
 
-            await page.goto(url, timeout=60000)
-            await page.wait_for_timeout(10000)
-            print("✅ HTML alındı.")
-            print(f"ℹ️ Səhifə Başlığı: {await page.title()}")
+try:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36"
+    }
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    print("✅ HTML alındı.")
+except Exception as e:
+    print(f"❌ Xəta baş verdi: {e}")
+    exit()
 
-            # Bütün yazıları topla
-            texts = await page.eval_on_selector_all(
-                "*",
-                "els => els.map(el => el.innerText).filter(t => t && t.trim().length > 0)"
-            )
+soup = BeautifulSoup(response.text, "html.parser")
+title = soup.title.string.strip() if soup.title else "Başlıq tapılmadı"
+print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            print(f"🔢 Tapılan yazı sayı: {len(texts)}")
+texts = soup.stripped_strings
+text_list = list(texts)
+print(f"🔢 Tapılan yazı sayı: {len(text_list)}")
 
-            # Sadəcə ilk 10 yazını göstər
-            for i, t in enumerate(texts[:10], 1):
-                print(f"{i}. {t.strip()[:80]}...")
-
-            # Əmsalları axtar
-            odds_pattern = re.compile(r"\b\d+\.\d{1,2}\b")
-            found_odds = set()
-
-            for text in texts:
-                matches = odds_pattern.findall(text)
-                for match in matches:
-                    if 1.01 <= float(match) <= 10.0:  # Əmsal aralığı
-                        found_odds.add(match)
-
-            print(f"🎯 Tapılan əmsal sayı: {len(found_odds)}")
-            for odd in sorted(found_odds):
-                print("•", odd)
-
-            await browser.close()
-
-    except Exception as e:
-        print(f"❌ Xəta baş verdi: {e}")
-
-asyncio.run(run())
+# Əmsal tapmaq üçün regex
+odds = re.findall(r"\d+\.\d{1,2}", response.text)
+print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
+for odd in odds[:10]:  # Yalnız ilk 10 əmsalı göstər
+    print(f"• {odd}")
