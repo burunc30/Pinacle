@@ -15,25 +15,19 @@ async def main():
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Oyun linklərini topla
-            links = await page.locator("a").all()
-            game_links = []
+            # Bütün linkləri tap
+            anchors = await page.locator("a").all()
+            found = False
+            print("🔍 Tapılan linklər və başlıqlar:")
+            for i, a in enumerate(anchors[:50]):
+                href = await a.get_attribute("href")
+                text = await a.inner_text()
+                if href:
+                    print(f"{i+1}. [{text.strip()}]({href})")
+                    found = True
 
-            for link in links:
-                href = await link.get_attribute("href")
-                if href and "/idman-novleri/futbol/" in href and "canli" not in href:
-                    if href.startswith("/"):
-                        full_url = "https://www.misli.az" + href
-                    else:
-                        full_url = href
-                    game_links.append(full_url)
-
-            if game_links:
-                print("🎯 Tapılan oyun linkləri:")
-                for i, game in enumerate(game_links[:10]):
-                    print(f"{i+1}. {game}")
-            else:
-                print("⚠️ Heç bir oyun linki tapılmadı.")
+            if not found:
+                print("⚠️ Heç bir link tapılmadı.")
 
             await browser.close()
 
