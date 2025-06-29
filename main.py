@@ -11,38 +11,25 @@ async def main():
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
             await page.goto(url, timeout=60000)
-            await page.wait_for_timeout(6000)  # Yüklənməsi üçün 6 saniyə gözlə
-
+            html = await page.content()
             print("✅ HTML alındı.")
+
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Komanda adları üçün potensial class-ları yoxla
-            team_selectors = [
-                '[data-testid="event-title"]',
-                '.event-title', 
-                '.event-name', 
-                '.team-name', 
-                '.participant__name', 
-                '.market-name', 
-                '.c-events-event-name__name'
-            ]
+            # Komanda adlarını tapmağa çalış — əvvəlki üsullar
+            event_names = await page.locator('[data-testid="event-title"]').all_inner_texts()
+            if not event_names:
+                event_names = await page.locator('.event-name, .match-row').all_inner_texts()
 
-            found_teams = []
-            for selector in team_selectors:
-                items = await page.locator(selector).all_inner_texts()
-                if items:
-                    found_teams.extend(items)
-
-            if found_teams:
+            if event_names:
                 print("⚽ Tapılan komanda adları:")
-                for team in set(found_teams):
-                    print("•", team.strip())
+                for team in event_names:
+                    print("•", team)
             else:
                 print("⚠️ Komanda adı tapılmadı.")
 
             # Əmsalları tap
-            html = await page.content()
             odds_matches = re.findall(r"\d+\.\d+", html)
             if odds_matches:
                 print("🎯 Tapılan əmsal sayı:", len(odds_matches))
@@ -50,6 +37,21 @@ async def main():
                     print("•", o)
             else:
                 print("❌ Əmsal tapılmadı.")
+
+            # 🔍 Unikal class-ların siyahısı
+            all_divs = await page.locator('div').all()
+            print(f"🔢 Tapılan DIV sayı: {len(all_divs)}")
+
+            unique_classes = set()
+            for div in all_divs:
+                class_attr = await div.get_attribute("class")
+                if class_attr:
+                    for cls in class_attr.split():
+                        unique_classes.add(cls)
+
+            print("🔍 Tapılan unikal class-lar:")
+            for cls in list(unique_classes)[:30]:  # ilk 30 class
+                print("-", cls)
 
             await browser.close()
 
