@@ -1,25 +1,23 @@
-name: Scraper
+name: Run Scraper
 
 on:
   workflow_dispatch:
 
 jobs:
-  scrape:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Kodu yüklə
-        uses: actions/checkout@v3
+    - name: Kodu yüklə
+      uses: actions/checkout@v3
 
-      - name: Python quraşdır
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
+    - name: Python quraşdır
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
 
-      - name: Asılılıqları quraşdır
-        run: pip install -r requirements.txt
+    - name: Python kitabxanalarını quraşdır
+      run: pip install requests beautifulsoup4
 
-      - name: Playwright komponentlərini quraşdır
-        run: python -m playwright install
-
-      - name: Scraper-i işə sal
-        run: python main.py
+    - name: Scraper-i işə sal
+      run: python main.py
