@@ -1,50 +1,42 @@
-import requests
-from bs4 import BeautifulSoup
-import re
+import asyncio
+from playwright.async_api import async_playwright
 
-url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
+async def run():
+    url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
+    print(f"🔗 Sayta daxil olunur: {url}")
 
-print(f"🔗 Sayta daxil olunur: {url}")
-try:
-    response = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
-    response.raise_for_status()
-    print("✅ HTML alındı.")
-except Exception as e:
-    print(f"❌ Xəta baş verdi: {e}")
-    exit()
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
+        await page.goto(url, timeout=60000)
+        await page.wait_for_timeout(5000)  # JS elementlər tam yüklənsin deyə gözləyirik
 
-soup = BeautifulSoup(response.text, "html.parser")
-print(f"ℹ️ Səhifə Başlığı: {soup.title.text.strip()}")
+        print("✅ HTML alındı.")
 
-# Komanda adlarını çıxar
-texts = soup.find_all(text=True)
-teams = set()
-for t in texts:
-    if " v " in t or " vs " in t:
-        teams.add(t.strip())
+        # Komanda adları üçün axtarış (mümkün qədər ümumi variant seçilib)
+        team_blocks = await page.locator("div:has-text('vs')").all_text_contents()
+        if team_blocks:
+            print("⚽ Tapılan komandalar:")
+            for team in team_blocks:
+                print("•", team.strip())
+        else:
+            print("⚠️ Komanda adı tapılmadı.")
 
-if teams:
-    print(f"⚽ Tapılan komanda cütləri: {len(teams)}")
-    for team in sorted(teams):
-        print("•", team)
-else:
-    print("⚠️ Komanda adı tapılmadı.")
+        # Əmsallar üçün sadə filtr
+        odds_raw = await page.locator("span").all_text_contents()
+        odds = []
+        for text in odds_raw:
+            try:
+                val = float(text.strip())
+                if 0.1 <= val <= 100.0:  # Real əmsal aralığı
+                    odds.append(val)
+            except:
+                continue
 
-# Əmsalları çıxar
-odds = []
-for t in texts:
-    found = re.findall(r"\b\d{1,3}\.\d{1,2}\b", t)
-    for val in found:
-        try:
-            fval = float(val)
-            if 1.01 <= fval <= 200:
-                odds.append(fval)
-        except:
-            pass
+        print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
+        for o in odds[:20]:
+            print("•", o)
 
-if odds:
-    print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
-    for o in odds[:20]:
-        print("•", o)
-else:
-    print("⚠️ Əmsal tapılmadı.")
+        await browser.close()
+
+asyncio.run(run())
