@@ -1,46 +1,54 @@
 import asyncio
 from playwright.async_api import async_playwright
+import re
 
-async def run():
+async def main():
     url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
-    print(f"🔗 Sayta daxil olunur: {url}")
+    print("🔗 Sayta daxil olunur:", url)
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        await page.goto(url, timeout=60000)
-        await page.wait_for_timeout(8000)
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, timeout=60000)
 
-        print("✅ HTML alındı.")
+            html = await page.content()
+            print("✅ HTML alındı.")
 
-        # Komanda adlarını daha ümumi formada axtar
-        texts = await page.locator("text=/.* - .*/").all_text_contents()
-        if texts:
-            print("⚽ Tapılan komanda adları:")
-            for t in texts:
-                print("•", t.strip())
-        else:
-            print("⚠️ Komanda adı tapılmadı.")
+            # Səhifə başlığı
+            title = await page.title()
+            print(f"ℹ️ Səhifə Başlığı: {title}")
 
-        # Əmsalları tapmağa çalış: sadəcə görünən rəqəmlər (0.1 - 100 aralığında)
-        raw_texts = await page.locator("body").all_text_contents()
-        odds = []
-        for block in raw_texts:
-            for part in block.split():
-                try:
-                    val = float(part.strip())
-                    if 0.1 <= val <= 100.0:
-                        odds.append(val)
-                except:
-                    continue
+            # Komanda adlarını tap (Team A - Team B formatı)
+            full_text = await page.locator("body").all_text_contents()
+            teams = []
+            for block in full_text:
+                lines = block.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if " - " in line and len(line) < 50 and all(x.isalpha() or x in " -'&" for x in line.replace(" - ", "")):
+                        teams.append(line)
 
-        if odds:
-            print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
-            for o in odds[:20]:
-                print("•", o)
-        else:
-            print("⚠️ Heç bir əmsal tapılmadı.")
+            if teams:
+                print("⚽ Tapılan komanda adları:")
+                for t in teams:
+                    print("•", t)
+            else:
+                print("⚠️ Komanda adı tapılmadı.")
 
-        await browser.close()
+            # Əmsalları tap
+            odds_matches = re.findall(r"\d+\.\d+", html)
+            if odds_matches:
+                print("🎯 Tapılan əmsal sayı:", len(odds_matches))
+                for o in odds_matches[:15]:  # çoxdursa ilk 15-i göstər
+                    print("•", o)
+            else:
+                print("❌ Əmsal tapılmadı.")
 
-asyncio.run(run())
+            await browser.close()
+
+    except Exception as e:
+        print("❌ Xəta baş verdi:", e)
+
+if __name__ == "__main__":
+    asyncio.run(main())
