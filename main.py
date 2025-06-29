@@ -11,27 +11,37 @@ async def main():
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
             await page.goto(url, timeout=60000)
-            await page.wait_for_timeout(5000)  # Dinamik yükləmə üçün gözləmə
-            print("✅ HTML alındı.")
+            await page.wait_for_timeout(6000)  # Yüklənməsi üçün 6 saniyə gözlə
 
+            print("✅ HTML alındı.")
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # DOM üzərində görünən textləri al
-            visible_text = await page.evaluate("""() => {
-                return document.body.innerText;
-            }""")
+            # Komanda adları üçün potensial class-ları yoxla
+            team_selectors = [
+                '[data-testid="event-title"]',
+                '.event-title', 
+                '.event-name', 
+                '.team-name', 
+                '.participant__name', 
+                '.market-name', 
+                '.c-events-event-name__name'
+            ]
 
-            # Komanda adlarını tapmağa cəhd (məsələn: "Team A vs Team B")
-            matches = re.findall(r"[A-Za-z\s\.\-&]{2,} vs [A-Za-z\s\.\-&]{2,}", visible_text)
-            if matches:
+            found_teams = []
+            for selector in team_selectors:
+                items = await page.locator(selector).all_inner_texts()
+                if items:
+                    found_teams.extend(items)
+
+            if found_teams:
                 print("⚽ Tapılan komanda adları:")
-                for m in matches:
-                    print("•", m.strip())
+                for team in set(found_teams):
+                    print("•", team.strip())
             else:
                 print("⚠️ Komanda adı tapılmadı.")
 
-            # Əmsalları HTML-dən tap
+            # Əmsalları tap
             html = await page.content()
             odds_matches = re.findall(r"\d+\.\d+", html)
             if odds_matches:
