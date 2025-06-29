@@ -9,33 +9,37 @@ async def run():
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
         await page.goto(url, timeout=60000)
-        await page.wait_for_timeout(5000)  # JS elementlər tam yüklənsin deyə gözləyirik
+        await page.wait_for_timeout(8000)
 
         print("✅ HTML alındı.")
 
-        # Komanda adları üçün axtarış (mümkün qədər ümumi variant seçilib)
-        team_blocks = await page.locator("div:has-text('vs')").all_text_contents()
-        if team_blocks:
-            print("⚽ Tapılan komandalar:")
-            for team in team_blocks:
-                print("•", team.strip())
+        # Komanda adlarını daha ümumi formada axtar
+        texts = await page.locator("text=/.* - .*/").all_text_contents()
+        if texts:
+            print("⚽ Tapılan komanda adları:")
+            for t in texts:
+                print("•", t.strip())
         else:
             print("⚠️ Komanda adı tapılmadı.")
 
-        # Əmsallar üçün sadə filtr
-        odds_raw = await page.locator("span").all_text_contents()
+        # Əmsalları tapmağa çalış: sadəcə görünən rəqəmlər (0.1 - 100 aralığında)
+        raw_texts = await page.locator("body").all_text_contents()
         odds = []
-        for text in odds_raw:
-            try:
-                val = float(text.strip())
-                if 0.1 <= val <= 100.0:  # Real əmsal aralığı
-                    odds.append(val)
-            except:
-                continue
+        for block in raw_texts:
+            for part in block.split():
+                try:
+                    val = float(part.strip())
+                    if 0.1 <= val <= 100.0:
+                        odds.append(val)
+                except:
+                    continue
 
-        print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
-        for o in odds[:20]:
-            print("•", o)
+        if odds:
+            print(f"🎯 Tapılan əmsal sayı: {len(odds)}")
+            for o in odds[:20]:
+                print("•", o)
+        else:
+            print("⚠️ Heç bir əmsal tapılmadı.")
 
         await browser.close()
 
