@@ -1,10 +1,4 @@
-import asyncio
-from playwright.async_api import async_playwright
-import re
-
-async def main():
-    url = "https://en.betway.co.tz/sport/soccer?sortOrder=League&fromStartEpoch=1751054400&toStartEpoch=1751140799"
-    print("🔗 Sayta daxil olunur:", url)
+daxil olunur:", url)
 
     try:
         async with async_playwright() as p:
