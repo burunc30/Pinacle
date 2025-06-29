@@ -11,28 +11,23 @@ async def main():
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
             await page.goto(url, timeout=60000)
+            await page.wait_for_timeout(5000)  # Dinamik elementlərin yüklənməsi üçün gözlə
             html = await page.content()
             print("✅ HTML alındı.")
 
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Komanda adlarını tapmağa çalış
-            possible_locators = [
-                '[data-testid="event-title"]',
-                '.event-name',
-                '.match-row',
-                '[class*="event"]',
-                '[class*="match"]'
-            ]
+            # Bütün görünən textləri çək
+            texts = await page.locator("body").all_inner_texts()
+            combined = " ".join(texts)
 
-            for selector in possible_locators:
-                event_names = await page.locator(selector).all_inner_texts()
-                if event_names:
-                    print(f"⚽ Tapılan komanda adları ({selector}):")
-                    for team in event_names:
-                        print("•", team)
-                    break
+            # Komanda adlarını tapmağa cəhd (məs: "TeamA vs TeamB")
+            matches = re.findall(r"[A-Za-z\s\.\-&]{2,} vs [A-Za-z\s\.\-&]{2,}", combined)
+            if matches:
+                print("⚽ Tapılan komanda adları:")
+                for m in matches:
+                    print("•", m.strip())
             else:
                 print("⚠️ Komanda adı tapılmadı.")
 
