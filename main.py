@@ -17,10 +17,10 @@ async def main():
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Komanda adlarını tapmağa çalış — əvvəlki üsullar
+            # Komanda adlarını tapmağa çalış
             event_names = await page.locator('[data-testid="event-title"]').all_inner_texts()
             if not event_names:
-                event_names = await page.locator('.event-name, .match-row').all_inner_texts()
+                event_names = await page.locator('.event-name, .match-row, .title, .fixture, .match-title, .name').all_inner_texts()
 
             if event_names:
                 print("⚽ Tapılan komanda adları:")
@@ -38,19 +38,23 @@ async def main():
             else:
                 print("❌ Əmsal tapılmadı.")
 
-            # 🔍 Unikal class-ların siyahısı
-            all_divs = await page.locator('div').all()
-            print(f"🔢 Tapılan DIV sayı: {len(all_divs)}")
-
+            # 🔍 Daha geniş selector-larla class-ları araşdır
+            tag_names = ["div", "span", "a", "li", "section", "article"]
             unique_classes = set()
-            for div in all_divs:
-                class_attr = await div.get_attribute("class")
-                if class_attr:
-                    for cls in class_attr.split():
-                        unique_classes.add(cls)
+            total_found = 0
 
-            print("🔍 Tapılan unikal class-lar:")
-            for cls in list(unique_classes)[:30]:  # ilk 30 class
+            for tag in tag_names:
+                elements = await page.locator(tag).all()
+                total_found += len(elements)
+                for el in elements:
+                    class_attr = await el.get_attribute("class")
+                    if class_attr:
+                        for cls in class_attr.split():
+                            unique_classes.add(cls)
+
+            print(f"🔢 Tapılan element sayı: {total_found}")
+            print("🔍 Tapılan unikal class-lar (ilk 30):")
+            for cls in list(unique_classes)[:30]:
                 print("-", cls)
 
             await browser.close()
