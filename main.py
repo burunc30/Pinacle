@@ -9,25 +9,27 @@ async def main():
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
         await page.goto(url, timeout=60000)
-        
-        # JS yüklənməsini gözlə
         await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(5000)  # əlavə 5 saniyə tampon
+        await page.wait_for_timeout(5000)
 
         print("✅ HTML alındı.")
         title = await page.title()
         print("ℹ️ Başlıq:", title)
 
-        # Butun div-ləri çıxardaq (debug məqsədi ilə)
-        all_divs = await page.locator("div").all_inner_texts()
-        print(f"🔍 Tapılan div sayı: {len(all_divs)}")
+        # Bütün div-ləri tapırıq və filtrləyirik: içində həm komanda adı, həm də əmsallar var
+        all_texts = await page.locator("div").all_inner_texts()
 
-        # İlk 20 div-ə bax
-        for i, d in enumerate(all_divs[:20]):
-            print(f"{i+1}. 📄", d.strip())
+        print("\n📋 Tapılan potensial oyun blokları:")
+        oyunlar = []
+        for i, text in enumerate(all_texts):
+            if any(k in text for k in ["Flamenqo", "Kanada", "ABŞ", "Duhok", "Paranavai"]):
+                oyunlar.append(text.strip())
 
-        # Daha sonra buradan uyğun selector tapacağıq
-        # Məs: div:has-text("Flamenqo") və ya data-testid varsa onunla
+        if not oyunlar:
+            print("⚠️ Oyun tapılmadı.")
+        else:
+            for idx, oyun in enumerate(oyunlar, 1):
+                print(f"\n🔹 Oyun #{idx}:\n{oyun}")
 
         await browser.close()
 
