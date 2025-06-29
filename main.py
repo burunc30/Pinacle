@@ -11,28 +11,28 @@ async def main():
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
             await page.goto(url, timeout=60000)
-
             html = await page.content()
             print("✅ HTML alındı.")
 
-            # Səhifə başlığı
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Komanda adlarını tap (Team A - Team B formatı)
-            full_text = await page.locator("body").all_text_contents()
-            teams = []
-            for block in full_text:
-                lines = block.split('\n')
-                for line in lines:
-                    line = line.strip()
-                    if " - " in line and len(line) < 50 and all(x.isalpha() or x in " -'&" for x in line.replace(" - ", "")):
-                        teams.append(line)
+            # Komanda adlarını tapmağa çalış
+            possible_locators = [
+                '[data-testid="event-title"]',
+                '.event-name',
+                '.match-row',
+                '[class*="event"]',
+                '[class*="match"]'
+            ]
 
-            if teams:
-                print("⚽ Tapılan komanda adları:")
-                for t in teams:
-                    print("•", t)
+            for selector in possible_locators:
+                event_names = await page.locator(selector).all_inner_texts()
+                if event_names:
+                    print(f"⚽ Tapılan komanda adları ({selector}):")
+                    for team in event_names:
+                        print("•", team)
+                    break
             else:
                 print("⚠️ Komanda adı tapılmadı.")
 
@@ -40,7 +40,7 @@ async def main():
             odds_matches = re.findall(r"\d+\.\d+", html)
             if odds_matches:
                 print("🎯 Tapılan əmsal sayı:", len(odds_matches))
-                for o in odds_matches[:15]:  # çoxdursa ilk 15-i göstər
+                for o in odds_matches[:15]:
                     print("•", o)
             else:
                 print("❌ Əmsal tapılmadı.")
