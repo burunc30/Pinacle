@@ -1,23 +1,28 @@
-name: Run Scraper
+name: Scrape Betway Odds
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - main.py
 
 jobs:
-  build:
+  scrape:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Kodu yüklə
+    - name: Repo-nu klonla
       uses: actions/checkout@v3
 
     - name: Python quraşdır
       uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: 3.11
 
-    - name: Python kitabxanalarını quraşdır
-      run: pip install requests beautifulsoup4
+    - name: Playwright və tələbləri quraşdır
+      run: |
+        pip install playwright
+        playwright install
 
-    - name: Scraper-i işə sal
+    - name: Python skriptini işə sal
       run: python main.py
