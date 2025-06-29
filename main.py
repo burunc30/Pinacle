@@ -9,46 +9,25 @@ async def main():
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
         await page.goto(url, timeout=60000)
-        await page.wait_for_timeout(3000)
+        
+        # JS yüklənməsini gözlə
+        await page.wait_for_load_state("networkidle")
+        await page.wait_for_timeout(5000)  # əlavə 5 saniyə tampon
 
         print("✅ HTML alındı.")
+        title = await page.title()
+        print("ℹ️ Başlıq:", title)
 
-        # Saytdakı oyun kartlarını tap
-        cards = await page.locator("div[class*=match-card], div[class*=match]").all()
-        print(f"🔢 Tapılan oyun sayı: {len(cards)}")
+        # Butun div-ləri çıxardaq (debug məqsədi ilə)
+        all_divs = await page.locator("div").all_inner_texts()
+        print(f"🔍 Tapılan div sayı: {len(all_divs)}")
 
-        for i, card in enumerate(cards[:5]):  # Test üçün yalnız ilk 5 oyun
-            print(f"\n🎯 Oyun {i+1}:")
+        # İlk 20 div-ə bax
+        for i, d in enumerate(all_divs[:20]):
+            print(f"{i+1}. 📄", d.strip())
 
-            try:
-                # Komanda adlarını al
-                teams = await card.locator("div:has-text(' - ')").all_inner_texts()
-                if teams:
-                    print("⚽ Komandalar:", teams[0])
-
-                # Əmsalları al
-                odds = await card.locator("span.odds-value").all_inner_texts()
-                if odds:
-                    print("💰 1X2 Əmsallar:", odds[:3])
-
-                # "+614" düyməsinə klik et (əgər varsa)
-                try:
-                    plus_btn = card.locator("text=+").first
-                    await plus_btn.click()
-                    await page.wait_for_timeout(1000)
-
-                    # Açılan bazarlardan Over/Under seç
-                    markets = await page.locator("div:has-text('Ümumi Qollar')").all_inner_texts()
-                    if markets:
-                        print("📊 Over/Under:", markets[:5])
-                    else:
-                        print("⚠️ Over/Under tapılmadı")
-
-                except:
-                    print("➕ Əlavə bazar düyməsi yoxdur və ya klik alınmadı.")
-
-            except Exception as e:
-                print("❌ Xəta:", e)
+        # Daha sonra buradan uyğun selector tapacağıq
+        # Məs: div:has-text("Flamenqo") və ya data-testid varsa onunla
 
         await browser.close()
 
