@@ -7,27 +7,23 @@ async def main():
 
     try:
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(headless=False)  # görünən üçün headless=False
             page = await browser.new_page()
             await page.goto(url, timeout=60000)
-            print("✅ HTML alındı.")
+            await page.wait_for_timeout(5000)  # 5 saniyə gözlə
 
-            title = await page.title()
-            print(f"ℹ️ Səhifə Başlığı: {title}")
+            # Scroll aşağı (oyunların tam yüklənməsi üçün)
+            await page.mouse.wheel(0, 10000)
+            await page.wait_for_timeout(3000)
 
-            # Bütün linkləri tap
-            anchors = await page.locator("a").all()
-            found = False
-            print("🔍 Tapılan linklər və başlıqlar:")
-            for i, a in enumerate(anchors[:50]):
-                href = await a.get_attribute("href")
-                text = await a.inner_text()
-                if href:
-                    print(f"{i+1}. [{text.strip()}]({href})")
-                    found = True
+            print("✅ Scroll və gözləmə tamamlandı.")
 
-            if not found:
-                print("⚠️ Heç bir link tapılmadı.")
+            # bütün div-ləri topla
+            divs = await page.locator("div").all_inner_texts()
+            print(f"🔢 Tapılan div sayı: {len(divs)}")
+
+            for i, div in enumerate(divs[:30]):  # ilk 30-u göstər
+                print(f"{i+1}. {div.strip()}")
 
             await browser.close()
 
