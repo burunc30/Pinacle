@@ -13,7 +13,7 @@ async def main():
             page = await context.new_page()
 
             await page.goto(url, timeout=90000)
-            await page.wait_for_timeout(5000)  # Sayt tam yüklənsin deyə
+            await page.wait_for_timeout(6000)
 
             html = await page.content()
             print("✅ HTML alındı.")
@@ -21,16 +21,18 @@ async def main():
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Komanda adlarını tapmağa çalışırıq
-            team_names = await page.locator('div.match-info').all_inner_texts()
+            # Komanda adlarını çıxarmağa çalışırıq
+            text_elements = await page.locator("div, span, a, button").all_inner_texts()
+            team_names = [t.strip() for t in text_elements if "-" in t and len(t.strip()) < 50]
+
             if team_names:
                 print("⚽ Tapılan komanda adları:")
-                for team in team_names[:10]:  # ilk 10-u göstər
-                    print("•", team.strip())
+                for name in team_names[:10]:
+                    print("•", name)
             else:
                 print("⚠️ Komanda adı tapılmadı.")
 
-            # Əmsalları çıxarırıq
+            # Əmsallar (rəqəmlər) çıxarılır
             odds = re.findall(r"\d+\.\d+", html)
             if odds:
                 print("🎯 Tapılan əmsal sayı:", len(odds))
