@@ -10,37 +10,30 @@ async def main():
         page = await browser.new_page()
         await page.goto(url, timeout=60000)
         await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(4000)
+        await page.wait_for_timeout(5000)  # daha çox gözləyək ki, elementlər yüklənsin
 
         print("✅ HTML alındı.")
 
-        # Oyun bloklarını tap
-        game_rows = page.locator("div[id^='bet-container']")
-        count = await game_rows.count()
+        # Bütün oyun satırları
+        games = page.locator("div[data-event-name]")
+        count = await games.count()
         print(f"📦 Tapılan oyun sayı: {count}")
 
-        for i in range(min(10, count)):
-            game = game_rows.nth(i)
-
+        for i in range(min(count, 10)):
+            row = games.nth(i)
             try:
-                teams = await game.locator(".market-group-container .mbln-tbl .row .col.col-2").all_inner_texts()
-                odds = await game.locator(".mbln-tbl .odd-button span").all_inner_texts()
+                team_name = await row.get_attribute("data-event-name")
+                odds = await row.locator(".outcome-button__odd").all_inner_texts()
 
-                team_names = [t for t in teams if "-" in t]
-                if team_names:
-                    print(f"\n🏟️ Oyun: {team_names[0]}")
-                else:
-                    print("\n🏟️ Oyun: (Komandalar tapılmadı)")
-
-                # Əmsalların çıxarılması
+                print(f"\n🏟️ Oyun: {team_name}")
                 if len(odds) >= 5:
                     print(f"   1X2: 1={odds[0]}  X={odds[1]}  2={odds[2]}")
-                    print(f"   Over 2.5: {odds[3]}   Under 2.5: {odds[4]}")
+                    print(f"   Over 2.5: {odds[3]}  Under 2.5: {odds[4]}")
                 else:
-                    print("   ❌ Əmsallar tam deyil")
+                    print("   ⚠️ Əmsallar natamam və ya tapılmadı")
 
             except Exception as e:
-                print("   ⚠️ Xəta:", e)
+                print("   ❌ Xəta:", e)
 
         await browser.close()
 
