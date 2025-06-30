@@ -16,20 +16,14 @@ async def main():
         title = await page.title()
         print("ℹ️ Başlıq:", title)
 
-        # Bütün div-ləri tapırıq və filtrləyirik: içində həm komanda adı, həm də əmsallar var
-        all_texts = await page.locator("div").all_inner_texts()
+        # Oyunlara aid linklər
+        hrefs = await page.locator("a").evaluate_all("links => links.map(a => a.href)")
+        oyun_linkləri = [link for link in hrefs if "/idman-novleri/futbol/" in link and "/oyun/" in link]
 
-        print("\n📋 Tapılan potensial oyun blokları:")
-        oyunlar = []
-        for i, text in enumerate(all_texts):
-            if any(k in text for k in ["Flamenqo", "Kanada", "ABŞ", "Duhok", "Paranavai"]):
-                oyunlar.append(text.strip())
-
-        if not oyunlar:
-            print("⚠️ Oyun tapılmadı.")
-        else:
-            for idx, oyun in enumerate(oyunlar, 1):
-                print(f"\n🔹 Oyun #{idx}:\n{oyun}")
+        oyun_linkləri = list(set(oyun_linkləri))  # Unikal et
+        print(f"\n🔗 Tapılan oyun linklərinin sayı: {len(oyun_linkləri)}")
+        for link in oyun_linkləri[:10]:  # ilk 10 linki göstər
+            print("•", link)
 
         await browser.close()
 
