@@ -2,7 +2,7 @@ import asyncio
 from playwright.async_api import async_playwright
 
 async def main():
-    url = "https://www.misli.az/idman-novleri/futbol"
+    url = "https://www.nesine.com/iddaa?et=1&ocg=MS-2%2C5&gt=Pop%C3%BCler"
     print("🔗 Sayta daxil olunur:", url)
 
     async with async_playwright() as p:
@@ -10,20 +10,37 @@ async def main():
         page = await browser.new_page()
         await page.goto(url, timeout=60000)
         await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(5000)
+        await page.wait_for_timeout(4000)
 
         print("✅ HTML alındı.")
-        title = await page.title()
-        print("ℹ️ Başlıq:", title)
 
-        # Oyunlara aid linklər
-        hrefs = await page.locator("a").evaluate_all("links => links.map(a => a.href)")
-        oyun_linkləri = [link for link in hrefs if "/idman-novleri/futbol/" in link and "/oyun/" in link]
+        # Oyun bloklarını tap
+        game_rows = page.locator("div[id^='bet-container']")
+        count = await game_rows.count()
+        print(f"📦 Tapılan oyun sayı: {count}")
 
-        oyun_linkləri = list(set(oyun_linkləri))  # Unikal et
-        print(f"\n🔗 Tapılan oyun linklərinin sayı: {len(oyun_linkləri)}")
-        for link in oyun_linkləri[:10]:  # ilk 10 linki göstər
-            print("•", link)
+        for i in range(min(10, count)):
+            game = game_rows.nth(i)
+
+            try:
+                teams = await game.locator(".market-group-container .mbln-tbl .row .col.col-2").all_inner_texts()
+                odds = await game.locator(".mbln-tbl .odd-button span").all_inner_texts()
+
+                team_names = [t for t in teams if "-" in t]
+                if team_names:
+                    print(f"\n🏟️ Oyun: {team_names[0]}")
+                else:
+                    print("\n🏟️ Oyun: (Komandalar tapılmadı)")
+
+                # Əmsalların çıxarılması
+                if len(odds) >= 5:
+                    print(f"   1X2: 1={odds[0]}  X={odds[1]}  2={odds[2]}")
+                    print(f"   Over 2.5: {odds[3]}   Under 2.5: {odds[4]}")
+                else:
+                    print("   ❌ Əmsallar tam deyil")
+
+            except Exception as e:
+                print("   ⚠️ Xəta:", e)
 
         await browser.close()
 
