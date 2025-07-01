@@ -1,42 +1,37 @@
+import asyncio
+from playwright.async_api import async_playwright
 import requests
-import json
 
-def main():
-    url = "https://www.nesine.com/Iddaa/MatchList/Popular"
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-    }
-
-    print("🔗 API-yə sorğu göndərilir:", url)
+async def main():
+    url = "https://www.nesine.com/iddaa?et=1&ocg=MS-2%2C5&gt=Pop%C3%BCler"
+    print("🔗 Sayta daxil olunur:", url)
 
     try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, timeout=60000)
 
-        matches = data.get("data", {}).get("matches", [])
-        print(f"📦 Tapılan oyun sayı: {len(matches)}")
+            html = await page.content()
+            print("✅ HTML alındı.")
 
-        for match in matches[:10]:
-            home_team = match.get("homeTeamName")
-            away_team = match.get("awayTeamName")
-            match_time = match.get("matchDate")
-            print(f"\n⏰ {match_time}")
-            print(f"⚽ {home_team} vs {away_team}")
+            title = await page.title()
+            print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            for market in match.get("markets", []):
-                if market.get("ocGroup") == "MS":  # 1X2
-                    print("🔢 Nəticə (1X2):")
-                    for oc in market.get("ocs", []):
-                        print(f"   • {oc['oc']} → {oc['ocRate']}")
-                if market.get("ocGroup") == "ALTÜST25":  # Over/Under 2.5
-                    print("📊 Over/Under 2.5:")
-                    for oc in market.get("ocs", []):
-                        print(f"   • {oc['oc']} → {oc['ocRate']}")
+            # Oyun adlarını seçmək üçün uyğun selector yazılmalıdır (bu test məqsədi ilə sadədir)
+            oyunlar = await page.locator("tr.mbln-tbl-row").all_inner_texts()
+            print("📦 Tapılan oyun sayı:", len(oyunlar))
+
+            if oyunlar:
+                for oyun in oyunlar[:10]:  # ilk 10 oyunu göstər
+                    print("•", oyun)
+            else:
+                print("⚠️ Oyun tapılmadı. Element yüklənməmiş ola bilər.")
+
+            await browser.close()
 
     except Exception as e:
-        print("❌ Xəta baş verdi:", e)
+        print("❌ Ümumi xəta baş verdi:", e)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
