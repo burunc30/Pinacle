@@ -1,50 +1,37 @@
-import asyncio
-from playwright.async_api import async_playwright
+import requests
 
-async def main():
-    url = "https://www.nesine.com/iddaa?et=1&ocg=MS-2%2C5&gt=Pop%C3%BCler"
-    print("🔗 Sayta daxil olunur:", url)
+def main():
+    url = "https://www.nesine.com/Iddaa/MatchList/Popular"
+    print("🔗 API-yə sorğu göndərilir:", url)
 
     try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, timeout=60000)
-            await page.wait_for_timeout(5000)  # Sayta 5 saniyə yüklənmə vaxtı ver
+        response = requests.get(url)
+        data = response.json()
 
-            print("✅ HTML alındı.")
-            title = await page.title()
-            print(f"ℹ️ Səhifə Başlığı: {title}")
+        matches = data.get("data", {}).get("matches", [])
+        print(f"📦 Tapılan oyun sayı: {len(matches)}")
 
-            games = page.locator("tr.mbln-tbl-row")
-            count = await games.count()
-            print(f"📦 Tapılan oyun sayı: {count}")
+        for match in matches[:10]:
+            home_team = match.get("homeTeamName")
+            away_team = match.get("awayTeamName")
+            match_time = match.get("matchDate")
+            odds = match.get("markets", [])
 
-            if count == 0:
-                print("⚠️ Oyun tapılmadı. Element yüklənməmiş ola bilər.")
-                await browser.close()
-                return
+            print(f"⏰ {match_time}")
+            print(f"⚽ {home_team} vs {away_team}")
 
-            for i in range(min(count, 10)):
-                row = games.nth(i)
-                try:
-                    time = await row.locator("td.mbln-td-time").inner_text()
-                    teams = await row.locator("td.mbln-td-team").inner_text()
-                    odds = await row.locator("td.mbln-td-oc").all_inner_texts()
-                    
-                    print("⏰ Saat:", time.strip())
-                    print("⚽ Oyun:", teams.strip())
-                    print("💸 Əmsallar:")
-                    for odd in odds:
-                        print("•", odd.strip())
-                    print("—" * 30)
-                except Exception as e:
-                    print("⚠️ Xəta oldu (oyun sırasında):", e)
-
-            await browser.close()
+            for market in odds:
+                desc = market.get("ocGroup", "")
+                selections = market.get("ocs", [])
+                print(f"🎯 {desc}:")
+                for sel in selections:
+                    label = sel.get("oc")
+                    value = sel.get("ocRate")
+                    print(f"   • {label}: {value}")
+            print("—" * 40)
 
     except Exception as e:
-        print("❌ Ümumi xəta baş verdi:", e)
+        print("❌ Xəta baş verdi:", e)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
