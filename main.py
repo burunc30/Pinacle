@@ -5,37 +5,42 @@ async def main():
     url = "https://www.nesine.com/iddaa?et=1&ocg=MS-2%2C5&gt=Pop%C3%BCler"
     print("🔗 Sayta daxil olunur:", url)
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-        await page.goto(url, timeout=60000)
-        await page.wait_for_load_state("networkidle")
-        await page.wait_for_timeout(5000)  # daha çox gözləyək ki, elementlər yüklənsin
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
+            await page.goto(url, timeout=60000)
+            await page.wait_for_selector("tr.mbln-tbl-row", timeout=15000)
+            print("✅ HTML alındı.")
 
-        print("✅ HTML alındı.")
+            title = await page.title()
+            print(f"ℹ️ Səhifə Başlığı: {title}")
 
-        # Bütün oyun satırları
-        games = page.locator("div[data-event-name]")
-        count = await games.count()
-        print(f"📦 Tapılan oyun sayı: {count}")
+            # Bütün oyun satırlarını seç
+            games = page.locator("tr.mbln-tbl-row")
+            count = await games.count()
+            print(f"📦 Tapılan oyun sayı: {count}")
 
-        for i in range(min(count, 10)):
-            row = games.nth(i)
-            try:
-                team_name = await row.get_attribute("data-event-name")
-                odds = await row.locator(".outcome-button__odd").all_inner_texts()
+            for i in range(min(count, 10)):  # ilk 10 oyun
+                row = games.nth(i)
+                try:
+                    time = await row.locator("td.mbln-td-time").inner_text()
+                    teams = await row.locator("td.mbln-td-team").inner_text()
+                    odds = await row.locator("td.mbln-td-oc").all_inner_texts()
+                    
+                    print("⏰ Saat:", time.strip())
+                    print("⚽ Oyun:", teams.strip())
+                    print("💸 Əmsallar:")
+                    for odd in odds:
+                        print("•", odd.strip())
+                    print("—" * 30)
+                except Exception as e:
+                    print("⚠️ Xəta oldu (oyun sırasında):", e)
 
-                print(f"\n🏟️ Oyun: {team_name}")
-                if len(odds) >= 5:
-                    print(f"   1X2: 1={odds[0]}  X={odds[1]}  2={odds[2]}")
-                    print(f"   Over 2.5: {odds[3]}  Under 2.5: {odds[4]}")
-                else:
-                    print("   ⚠️ Əmsallar natamam və ya tapılmadı")
+            await browser.close()
 
-            except Exception as e:
-                print("   ❌ Xəta:", e)
-
-        await browser.close()
+    except Exception as e:
+        print("❌ Ümumi xəta baş verdi:", e)
 
 if __name__ == "__main__":
     asyncio.run(main())
