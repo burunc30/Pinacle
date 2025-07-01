@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - main.py
+      - requirements.txt
 
 jobs:
   scrape:
@@ -19,10 +20,10 @@ jobs:
       with:
         python-version: 3.11
 
-    - name: Playwright və tələbləri quraşdır
+    - name: Kitabxanaları yüklə
       run: |
-        pip install playwright
-        playwright install
+        pip install -r requirements.txt
+        playwright install --with-deps
 
     - name: Python skriptini işə sal
       run: python main.py
