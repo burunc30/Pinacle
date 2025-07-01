@@ -10,18 +10,22 @@ async def main():
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
             await page.goto(url, timeout=60000)
-            await page.wait_for_selector("tr.mbln-tbl-row", timeout=15000)
-            print("✅ HTML alındı.")
+            await page.wait_for_timeout(5000)  # Sayta 5 saniyə yüklənmə vaxtı ver
 
+            print("✅ HTML alındı.")
             title = await page.title()
             print(f"ℹ️ Səhifə Başlığı: {title}")
 
-            # Bütün oyun satırlarını seç
             games = page.locator("tr.mbln-tbl-row")
             count = await games.count()
             print(f"📦 Tapılan oyun sayı: {count}")
 
-            for i in range(min(count, 10)):  # ilk 10 oyun
+            if count == 0:
+                print("⚠️ Oyun tapılmadı. Element yüklənməmiş ola bilər.")
+                await browser.close()
+                return
+
+            for i in range(min(count, 10)):
                 row = games.nth(i)
                 try:
                     time = await row.locator("td.mbln-td-time").inner_text()
