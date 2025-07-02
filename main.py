@@ -1,37 +1,30 @@
-import asyncio
-from playwright.async_api import async_playwright
-import requests
+from playwright.sync_api import sync_playwright
+import time
 
-async def main():
-    url = "https://www.nesine.com/iddaa?et=1&ocg=MS-2%2C5&gt=Pop%C3%BCler"
-    print("🔗 Sayta daxil olunur:", url)
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        print("🔗 Sayta daxil olunur...")
+        page.goto("https://www.nesine.com/iddaa?et=1&ocg=MS-2%2C5&gt=Pop%C3%BCler")
+        page.wait_for_timeout(15000)  # Dinamik datanın gəlməsi üçün 15 saniyə gözlə
 
-    try:
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            page = await browser.new_page()
-            await page.goto(url, timeout=60000)
+        matches = page.query_selector_all("tr[id^='match-row']")
 
-            html = await page.content()
-            print("✅ HTML alındı.")
+        if not matches:
+            print("⚠️ Heç bir oyun tapılmadı.")
+        else:
+            print(f"📦 Tapılan oyun sayı: {len(matches)}")
+            for match in matches:
+                try:
+                    teams = match.query_selector(".match-link").inner_text().strip()
+                    odds = match.query_selector_all(".mbln-odds-column span")
+                    odds_values = [o.inner_text().strip() for o in odds if o.inner_text().strip()]
+                    print(f"⚽ {teams} | Əmsallar: {', '.join(odds_values)}")
+                except:
+                    continue
 
-            title = await page.title()
-            print(f"ℹ️ Səhifə Başlığı: {title}")
-
-            # Oyun adlarını seçmək üçün uyğun selector yazılmalıdır (bu test məqsədi ilə sadədir)
-            oyunlar = await page.locator("tr.mbln-tbl-row").all_inner_texts()
-            print("📦 Tapılan oyun sayı:", len(oyunlar))
-
-            if oyunlar:
-                for oyun in oyunlar[:10]:  # ilk 10 oyunu göstər
-                    print("•", oyun)
-            else:
-                print("⚠️ Oyun tapılmadı. Element yüklənməmiş ola bilər.")
-
-            await browser.close()
-
-    except Exception as e:
-        print("❌ Ümumi xəta baş verdi:", e)
+        browser.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run()
