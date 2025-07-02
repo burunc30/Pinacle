@@ -1,11 +1,10 @@
-name: Scrape Betway Odds
+name: Scrape Nesine Odds
 
 on:
   workflow_dispatch:
   push:
     paths:
       - main.py
-      - requirements.txt
 
 jobs:
   scrape:
@@ -20,10 +19,10 @@ jobs:
       with:
         python-version: 3.11
 
-    - name: Kitabxanaları yüklə
+    - name: Playwright və tələbləri quraşdır
       run: |
         pip install -r requirements.txt
-        playwright install --with-deps
+        playwright install
 
-    - name: Python skriptini işə sal
+    - name: Skripti işə sal
       run: python main.py
