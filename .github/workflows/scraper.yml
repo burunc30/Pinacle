@@ -19,7 +19,7 @@ jobs:
       with:
         python-version: 3.11
 
-    - name: Playwright və tələbləri quraşdır
+    - name: Tələbləri quraşdır
       run: |
         pip install -r requirements.txt
         playwright install
