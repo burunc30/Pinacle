@@ -1,4 +1,4 @@
-name: Scrape Nesine Odds
+name: Scrape BetExplorer Odds
 
 on:
   workflow_dispatch:
@@ -19,10 +19,8 @@ jobs:
       with:
         python-version: 3.11
 
-    - name: Tələbləri quraşdır
-      run: |
-        pip install -r requirements.txt
-        playwright install
+    - name: Kitabxanaları quraşdır
+      run: pip install -r requirements.txt
 
-    - name: Skripti işə sal
+    - name: Python skriptini işə sal
       run: python main.py
