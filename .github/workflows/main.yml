@@ -1,0 +1,28 @@
+name: Run Betexplorer Scraper
+
+on:
+  workflow_dispatch:  # Manual run
+  push:               # Every push to main branch
+    branches:
+      - main
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests
+          pip install beautifulsoup4
+
+      - name: Run scraper
+        run: python main.py
