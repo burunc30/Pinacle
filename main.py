@@ -7,12 +7,18 @@ async def main():
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
+        context = await browser.new_context(user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/115.0.0.0 Safari/537.36"
+        ))
+        page = await context.new_page()
         await page.goto(url)
-
-        # Səhifənin tam yüklənməsini gözlə
-        await page.wait_for_selector(".table-main")
-
+        
+        # Bütün sorğuların tamamlanmasını gözlə
+        await page.wait_for_load_state("networkidle")
+        
+        # Cədvəl elementlərini tap
         rows = await page.query_selector_all(".table-main tr")
         print(f"📦 Tapılan sətir sayı: {len(rows)}")
 
